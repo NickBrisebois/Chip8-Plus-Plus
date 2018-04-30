@@ -29,8 +29,9 @@ class Emulator
 		void handleOpcode( unsigned short opcode );
 		void setIndexReg( unsigned short addr );
 		void clearScreen();
-		void addVYToVX( unsigned short opcode );
 		void storeBCDVX( unsigned short opcode );
+		void storeRegisters();
+		void loadRegisters();
 		void draw( unsigned short opcode );
 	public:
 		Emulator();

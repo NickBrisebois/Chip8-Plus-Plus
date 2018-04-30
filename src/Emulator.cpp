@@ -6,6 +6,7 @@
 Emulator::Emulator()
 {
 	std::cout << "Emulator has started" << std::endl;
+	srand( time(NULL) );
 }
 
 void Emulator::initialize()
@@ -102,6 +103,7 @@ void Emulator::handleOpcode( unsigned short opcode )
 	unsigned short b = ( opcode & 0x0F00 ) >> 8;
 	unsigned short c = ( opcode & 0x00F0 ) >> 4;
 	unsigned short d = ( opcode & 0x000F );
+	unsigned short bcd = ( opcode & 0x0FFF );
 	unsigned short cd = ( opcode & 0x00FF );
 
 	switch( opcode & 0xF000 ) {
@@ -117,10 +119,6 @@ void Emulator::handleOpcode( unsigned short opcode )
 				default:
 					std::cout << "Unknown opcode [0x0000]: " << opcode << std::endl;
 			}
-		case 0xA000: // LD I, addr
-			setIndexReg( opcode & 0x0FFF );
-			pc += 2;
-			break;
 		case 0x2000: // RET
 			stack[sp] = pc;
 			++sp;
@@ -218,17 +216,64 @@ void Emulator::handleOpcode( unsigned short opcode )
 					break;
 			}
 			break;
-/**
- * Needs to be implemented in a switch:
-		case 0x0033: // LD B, Vx
-			storeBCDVX( opcode );
+		case 0x9000: // SNE Vx, Vy
+			if( V[b] == V[c] ) {
+				pc += 2;
+			}
 			pc += 2;
 			break;
-*/
+		case 0xA000: // LD I, addr
+			setIndexReg( opcode & 0x0FFF );
+			pc += 2;
+			break;
+		case 0xB000: // JP V0, addr
+			pc = bcd + V[0];
+			break;
+		case 0xC000: // RND Vx, byte
+			V[b] = ( rand() % 256 ) & cd;
+			pc += 2;
+			break;
 		case 0xD000: // DRW Vx, Vy, nibble
 			draw( opcode );
 			pc += 2;
 			break;
+		// TODO: Implement Ex9E, ExA1 Here
+		case 0xF000:
+			switch( opcode & 0x00FF ) {
+				case 0x0007: // LD Vx, DT
+					V[b] = delay_timer;
+					pc += 2;
+					break;
+				// TODO: Implement Fx0A Here
+				case 0x0015: // LD DT, Vx
+					delay_timer = V[b];
+					pc += 2;
+					break;
+				case 0x0018: // LD ST, Vx
+					sound_timer = V[b];
+					pc += 2;
+					break;
+				case 0x001E: // ADD I, Vx
+					I += V[b];
+					pc += 2;
+					break;
+				case 0x0029: // LD F, Vx
+					I = V[b * 5]; // This is probably wrong
+					pc += 2;
+					break;
+				case 0x0033: // LD B, Vx
+					storeBCDVX( opcode );
+					pc += 2;
+					break;
+				case 0x0055: // LD [I], Vx
+					storeRegisters();
+					pc += 2;
+					break;
+				case 0x0065: // LD Vx, [I]
+					loadRegisters();
+					pc += 2;
+					break;
+			}
 	}
 }
 
@@ -275,4 +320,18 @@ void Emulator::draw( unsigned short opcode )
 	}
 	std::cout << "Draw Flag: true" << std::endl;
 	drawFlag = true;
+}
+
+void Emulator::storeRegisters()
+{
+	for( int i = 0x0; i < 0xF; ++i ) {
+		memory[I + i] = V[i];
+	}
+}
+
+void Emulator::loadRegisters()
+{
+	for( int i = 0x0; i < 0xF; ++i ) {
+		V[i] = memory[I + i];
+	}
 }
