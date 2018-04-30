@@ -28,15 +28,20 @@ class Emulator
 		unsigned char key[16];
 		std::ifstream game;
 
-		void handleOpcode( char opcode );
-		void setIndexReg( int addr );
+		void handleOpcode( short opcode );
+		void setIndexReg( short addr );
+		void clearScreen();
+		void addVYToVX( short opcode );
+		void storeBCDVX( short opcode );
+		void draw( short opcode );
 	public:
 		Emulator();
 		void initialize();
-		void loadGame( std::string gamePath );
+		bool loadGame( std::string gamePath );
 		void emulateCycle();
-		void drawFlag();
 		void setKeys();
+
+		bool drawFlag;
 };
 
 #endif

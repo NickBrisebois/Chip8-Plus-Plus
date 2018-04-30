@@ -1,4 +1,5 @@
 #include <SFML/Graphics.hpp>
+#include <thread>
 
 #include "Emulator.hpp"
 
@@ -12,7 +13,10 @@ int main( int argc, char* argv[] )
 	sf::RenderWindow window( sf::VideoMode( windowHeight, windowWidth ), "Chip 8 Emulator" );
 	
 	Emulator* pChip8 = new Emulator();
-	pChip8->loadGame( "./breakout.ch8" );
+	if( !pChip8->loadGame( "./breakout.ch8" ) ) {
+		return -1;
+	}
+
 
 	while( window.isOpen() ) {
 		sf::Event event;
@@ -24,6 +28,9 @@ int main( int argc, char* argv[] )
 				window.close();
 			}
 		}
+
+		// For debug
+		std::this_thread::sleep_for( std::chrono::seconds( 1 ) );
 
 		window.clear();
 		window.display();

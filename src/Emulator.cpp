@@ -1,5 +1,6 @@
 #include <iostream>
 #include <fstream>
+#include <iomanip>
 #include "Emulator.hpp"
 
 Emulator::Emulator()
@@ -31,34 +32,49 @@ void Emulator::initialize()
 		0xF0, 0x80, 0xF0, 0x80, 0xF0, // E
 		0xF0, 0x80, 0xF0, 0x80, 0x80  // F
 	};
+
+	clearScreen();
+
+	// Clear stack
+	for( int i = 0; i < 16; ++i ) {
+		stack[i] = 0;
+	}
+
+	// Clear memory
+	for( int i = 0; i < 4096; ++i ) {
+		memory[i] = 0;
+	}
+
 	// Beginning of memory holds the font set 
 	for( int i = 0; i < 80; ++i ) {
 		memory[i] = fontset[i];
 	}
+
 }
 
-void Emulator::loadGame( std::string gamePath )
+bool Emulator::loadGame( std::string gamePath )
 {
 	// Load the game in binary read mode
-	game.open( gamePath, std::ifstream::binary );
+	game.open( gamePath, std::ifstream::ate );
 
 	if( !game.is_open() ) {
-		throw std::runtime_error( "Game could not be loaded ");
+		std::cerr << "Game could not be loaded" << std::endl;
+		return false;
 	}
 
-	// Get the data from the game by getting its internal filebuf object
-	std::filebuf* pBuff = game.rdbuf();
-	std::size_t size = pBuff->pubseekoff( 0, game.end, game.in );
-	char* buffer = new char[size];
-	pBuff->sgetn( buffer, size );
+	std::ifstream::pos_type size = game.tellg();
+	unsigned char* buffer = new unsigned char[size];
+	game.seekg( 0, std::ifstream::beg );
+	game.read( ( char* )buffer, size );
 	game.close();
 
 	for( int i = 0; i < size; ++i ){
 		// Game memory is loaded in at address 0x200 (512 DEC)
-		memory[ i + 512 ] = buffer[i];
+		memory[i + 512] = buffer[i];
 	}
 
 	std::cout << gamePath << " successfully loaded into memory" << std::endl;
+	return true;
 }
 
 void Emulator::emulateCycle()
@@ -79,19 +95,96 @@ void Emulator::emulateCycle()
 	}
 }
 
-void Emulator::handleOpcode( char opcode ) 
+void Emulator::handleOpcode( short opcode ) 
 {
+	std::cout << std::hex << (opcode & 0xF000) << std::endl;
 	switch( opcode & 0xF000 ) {
-		case 0xA000:
-			I = opcode & 0x0FFF;
+		case 0x0000: // Opcodes [0x00E && 0x00EE]
+			switch( opcode & 0x000F ) {
+				case 0x0000: // [0x00E0] Clears the screen
+					clearScreen();
+					break;
+				case 0x000E: // [0x00EE] Returns from subroutine
+					// RTS
+					break;
+				default:
+					std::cout << "Unknown opcode [0x0000]: " << opcode << std::endl;
+			}
+		case 0xA000: // Opcode [0xANNN]
+			setIndexReg( opcode & 0x0FFF );
 			pc += 2;
 			break;
+		case 0x2000: // Opcode [0x2NNN]
+			stack[sp] = pc;
+			++sp;
+			pc = opcode & 0x0FFF;
+			break;
+		case 0x0004: // Opcode [0x8XY4]
+			addVYToVX( opcode );
+			pc += 2;
+			break;
+		case 0x0033:
+			storeBCDVX( opcode );
+			pc += 2;
+			break;
+		case 0xD000:
+			draw( opcode );
+			pc += 2;
 	}
 }
 
-void Emulator::setIndexReg( int addr ) 
+void Emulator::setIndexReg( short addr ) 
 {
-
+	std::cout << "[i] " << addr << std::endl;
+	I = addr;
 }
 
 
+void Emulator::clearScreen()
+{
+	std::cout << "Screen Cleared" << std::endl;
+	for( int i = 0; i < 2048; ++i ){
+		gfx[i] = 0;
+	}
+}
+
+void Emulator::addVYToVX( short opcode )
+{
+	if( V[( opcode & 0x00F0 ) >> 4] > ( 0xFF - V[( opcode & 0x0F00 ) >> 8] ) ) {
+		V[0xF] = 1;
+	}else {
+		V[0xF] = 0;
+	}
+	V[( opcode & 0x0F00 ) >> 8] += V[( opcode & 0x00F0 ) >> 4];
+	std::cout << "V[" << ( ( opcode & 0x0F00 ) >> 8 ) << "]" << V[( ( opcode & 0x0F00 ) >> 8 )] << std::endl;
+}
+
+void Emulator::storeBCDVX( short opcode )
+{
+	memory[I] = V[( opcode & 0x0F00 ) >> 8] / 100;
+	memory[I + 1] = ( V[( opcode & 0x0F00 ) >> 8] / 10 ) % 10;
+	memory[I + 2] = ( V[( opcode & 0x0F00 ) >> 8] % 100 ) % 10;
+}
+
+void Emulator::draw( short opcode )
+{
+	unsigned short x = V[( opcode & 0x0F00 ) >> 8];
+	unsigned short y = V[( opcode & 0x00F0 ) >> 4];
+	unsigned short height = opcode & 0x000F;
+	unsigned short pixel;
+
+	V[0xF] = 0;
+	for( int yline = 0; yline < height; yline++ ) {
+		pixel = memory[I + yline];
+		for( int xline = 0; xline < 8; xline++ ) {
+			if( ( pixel & ( 0x80 >> xline ) ) != 0 ) {
+				if( gfx[ ( x + xline + ( ( y + yline ) * 64 ) ) ] == 1 ) {
+					V[0xF] = 1;	
+				}
+				gfx[x + xline + ( ( y + yline ) * 64 )] ^= 1;
+			}
+		}
+	}
+
+	drawFlag = true;
+}
