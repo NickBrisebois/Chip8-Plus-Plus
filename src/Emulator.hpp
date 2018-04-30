@@ -16,8 +16,6 @@ class Emulator
 		// The index register and the program counters can have values from 0x000 to 0xFFF
 		unsigned short I;
 		unsigned short pc;
-		// The graphics in the chip8 are black and white and the screen has a total of 2048 pixels
-		unsigned char gfx[64 * 32];
 		unsigned char delay_timer;
 		unsigned char sound_timer;
 
@@ -41,6 +39,8 @@ class Emulator
 		void emulateCycle();
 		void setKeys();
 
+		// The graphics in the chip8 are black and white and the screen has a total of 2048 pixels
+		unsigned char gfx[64 * 32];
 		bool drawFlag;
 };
 

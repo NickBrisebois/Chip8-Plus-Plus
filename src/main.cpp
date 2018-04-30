@@ -13,10 +13,12 @@ int main( int argc, char* argv[] )
 	sf::RenderWindow window( sf::VideoMode( windowHeight, windowWidth ), "Chip 8 Emulator" );
 	
 	Emulator* pChip8 = new Emulator();
-	if( !pChip8->loadGame( "./breakout.ch8" ) ) {
+	if( !pChip8->loadGame( "./MAZE" ) ) {
 		return -1;
 	}
 
+	sf::RectangleShape pixel( sf::Vector2f( 10, 10 ) );
+	pixel.setSize( sf::Vector2f( 10, 10 ) );
 
 	while( window.isOpen() ) {
 		sf::Event event;
@@ -29,8 +31,12 @@ int main( int argc, char* argv[] )
 			}
 		}
 
+		if( pChip8->drawFlag ) {
+			window.draw( pixel );
+		}
+
 		// For debug
-		std::this_thread::sleep_for( std::chrono::seconds( 1 ) );
+	//	std::this_thread::sleep_for( std::chrono::seconds( 1 ) );
 
 		window.clear();
 		window.display();

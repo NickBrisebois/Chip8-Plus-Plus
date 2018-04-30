@@ -97,39 +97,67 @@ void Emulator::emulateCycle()
 
 void Emulator::handleOpcode( short opcode ) 
 {
-	std::cout << std::hex << (opcode & 0xF000) << std::endl;
 	switch( opcode & 0xF000 ) {
 		case 0x0000: // Opcodes [0x00E && 0x00EE]
 			switch( opcode & 0x000F ) {
-				case 0x0000: // [0x00E0] Clears the screen
+				case 0x0000: // CLS
 					clearScreen();
 					break;
-				case 0x000E: // [0x00EE] Returns from subroutine
-					// RTS
+				case 0x000E: // RET
+					pc = stack[sp-1];
+					sp--;
 					break;
 				default:
 					std::cout << "Unknown opcode [0x0000]: " << opcode << std::endl;
 			}
-		case 0xA000: // Opcode [0xANNN]
+		case 0xA000: // LD I, addr
 			setIndexReg( opcode & 0x0FFF );
 			pc += 2;
 			break;
-		case 0x2000: // Opcode [0x2NNN]
+		case 0x2000: // RET
 			stack[sp] = pc;
 			++sp;
 			pc = opcode & 0x0FFF;
 			break;
-		case 0x0004: // Opcode [0x8XY4]
+		case 0x3000: // SE Vx, byte
+			if( V[( opcode & 0x0F00 ) >> 4] == ( opcode & 0x00FF ) ) {
+				pc += 2;
+			}
+			pc += 2;
+			break;
+		case 0x4000: // SNE Vx, byte
+			if( V[( opcode & 0x0F00 ) >> 4] != ( opcode & 0x00FF ) ) {
+				pc += 2;
+			}
+			pc += 2;
+			break;
+		case 0x5000: // SE Vx, Vy
+			if( V[( opcode & 0x0F00 ) >> 4] == V[( opcode & 0x0F00 ) >> 8] ) {
+				std::cout << "Skipped next instruction" << std::endl;
+				pc += 2;
+			}
+			pc += 2;
+			break;
+		case 0x6000: // LD Vx, byte
+			V[( opcode & 0xF00 ) >> 4] = ( opcode & 0x00FF );
+			pc += 2;
+			break;
+		case 0x7000: // ADD Vx, byte
+			V[( opcode & 0xF00 ) >> 4] += ( opcode & 0x00FF );
+			pc += 2;
+			break;
+		case 0x0004: // XOR Vx, Vy
 			addVYToVX( opcode );
 			pc += 2;
 			break;
-		case 0x0033:
+		case 0x0033: // LD B, Vx
 			storeBCDVX( opcode );
 			pc += 2;
 			break;
-		case 0xD000:
+		case 0xD000: // DRW Vx, Vy, nibble
 			draw( opcode );
 			pc += 2;
+			break;
 	}
 }
 
@@ -185,6 +213,6 @@ void Emulator::draw( short opcode )
 			}
 		}
 	}
-
+	std::cout << "Draw Flag: true" << std::endl;
 	drawFlag = true;
 }
