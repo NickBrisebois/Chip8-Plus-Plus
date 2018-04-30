@@ -26,12 +26,12 @@ class Emulator
 		unsigned char key[16];
 		std::ifstream game;
 
-		void handleOpcode( short opcode );
-		void setIndexReg( short addr );
+		void handleOpcode( unsigned short opcode );
+		void setIndexReg( unsigned short addr );
 		void clearScreen();
-		void addVYToVX( short opcode );
-		void storeBCDVX( short opcode );
-		void draw( short opcode );
+		void addVYToVX( unsigned short opcode );
+		void storeBCDVX( unsigned short opcode );
+		void draw( unsigned short opcode );
 	public:
 		Emulator();
 		void initialize();

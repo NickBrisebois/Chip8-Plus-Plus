@@ -95,11 +95,18 @@ void Emulator::emulateCycle()
 	}
 }
 
-void Emulator::handleOpcode( short opcode ) 
+void Emulator::handleOpcode( unsigned short opcode ) 
 {
+	// Opcode represented as ABCD
+	unsigned short a = ( opcode & 0xF000 ) >> 12;
+	unsigned short b = ( opcode & 0x0F00 ) >> 8;
+	unsigned short c = ( opcode & 0x00F0 ) >> 4;
+	unsigned short d = ( opcode & 0x000F );
+	unsigned short cd = ( opcode & 0x00FF );
+
 	switch( opcode & 0xF000 ) {
 		case 0x0000: // Opcodes [0x00E && 0x00EE]
-			switch( opcode & 0x000F ) {
+			switch( d ) {
 				case 0x0000: // CLS
 					clearScreen();
 					break;
@@ -120,40 +127,104 @@ void Emulator::handleOpcode( short opcode )
 			pc = opcode & 0x0FFF;
 			break;
 		case 0x3000: // SE Vx, byte
-			if( V[( opcode & 0x0F00 ) >> 4] == ( opcode & 0x00FF ) ) {
+			if( V[b] == cd ) {
 				pc += 2;
 			}
 			pc += 2;
 			break;
 		case 0x4000: // SNE Vx, byte
-			if( V[( opcode & 0x0F00 ) >> 4] != ( opcode & 0x00FF ) ) {
+			if( V[b] != cd ) {
 				pc += 2;
 			}
 			pc += 2;
 			break;
 		case 0x5000: // SE Vx, Vy
-			if( V[( opcode & 0x0F00 ) >> 4] == V[( opcode & 0x0F00 ) >> 8] ) {
+			if( V[b] == V[c] ) {
 				std::cout << "Skipped next instruction" << std::endl;
 				pc += 2;
 			}
 			pc += 2;
 			break;
 		case 0x6000: // LD Vx, byte
-			V[( opcode & 0xF00 ) >> 4] = ( opcode & 0x00FF );
+			V[b] = cd;
 			pc += 2;
 			break;
 		case 0x7000: // ADD Vx, byte
-			V[( opcode & 0xF00 ) >> 4] += ( opcode & 0x00FF );
+			V[b] += cd;
 			pc += 2;
 			break;
-		case 0x0004: // XOR Vx, Vy
-			addVYToVX( opcode );
-			pc += 2;
+		case 0x8000:
+			switch ( opcode & 0x000F ) {
+				case 0x0000: // LD Vx, Vy
+					V[b] = V[c];
+					pc += 2;
+					break;
+				case 0x0001: // OR Vx, Vy
+					V[b] = V[b] | V[c];
+					pc += 2;
+					break;
+				case 0x0002: // AND Vx, Vy
+					V[b] = V[b] & V[c];
+					pc += 2;
+					break;
+				case 0x0003: // XOR Vx, Vy
+					V[b] = V[b] ^ V[c];
+					pc += 2;
+					break;
+				case 0x0004: // ADD Vx, Vy
+					if( V[b] + V[c] > 0xFF ) {
+						V[0xF] = 1;
+					} else {
+						V[0xF] = 0;
+					}
+					V[b] += V[c];
+					pc += 2;
+					break;
+				case 0x0005: // SUB Vx, Vy
+					if( V[b] > V[c] ) {
+						V[0xF] = 1;
+					}else{
+						V[0XF] = 0;
+					}
+					V[b] -= V[c];
+					pc += 2;
+					break;
+				case 0x0006: // SHR Vx {, Vy}
+					if( V[b] >> 3 == 1 ) {
+						V[0xF] = 1;
+					} else {
+						V[0xF] = 0;
+					}
+					V[b] /= 2;
+					pc += 2;
+					break;
+				case 0x0007: // SUBN Vx, Vy
+					if( V[c] > V[b] ) {
+						V[0xF] = 1;
+					} else {
+						V[0xF] = 0;
+					}
+					V[b] = V[c] - V[b];
+					pc += 2;
+					break;
+				case 0x000E: // SHL Vx {, Vy}
+					if( V[b] >> 7 == 1 ) {
+						V[0xF] = 1;
+					} else {
+						V[0xF] = 0;
+					}
+					V[b] *= 2;
+					pc += 2;
+					break;
+			}
 			break;
+/**
+ * Needs to be implemented in a switch:
 		case 0x0033: // LD B, Vx
 			storeBCDVX( opcode );
 			pc += 2;
 			break;
+*/
 		case 0xD000: // DRW Vx, Vy, nibble
 			draw( opcode );
 			pc += 2;
@@ -161,7 +232,7 @@ void Emulator::handleOpcode( short opcode )
 	}
 }
 
-void Emulator::setIndexReg( short addr ) 
+void Emulator::setIndexReg( unsigned short addr ) 
 {
 	std::cout << "[i] " << addr << std::endl;
 	I = addr;
@@ -176,25 +247,14 @@ void Emulator::clearScreen()
 	}
 }
 
-void Emulator::addVYToVX( short opcode )
-{
-	if( V[( opcode & 0x00F0 ) >> 4] > ( 0xFF - V[( opcode & 0x0F00 ) >> 8] ) ) {
-		V[0xF] = 1;
-	}else {
-		V[0xF] = 0;
-	}
-	V[( opcode & 0x0F00 ) >> 8] += V[( opcode & 0x00F0 ) >> 4];
-	std::cout << "V[" << ( ( opcode & 0x0F00 ) >> 8 ) << "]" << V[( ( opcode & 0x0F00 ) >> 8 )] << std::endl;
-}
-
-void Emulator::storeBCDVX( short opcode )
+void Emulator::storeBCDVX( unsigned short opcode )
 {
 	memory[I] = V[( opcode & 0x0F00 ) >> 8] / 100;
 	memory[I + 1] = ( V[( opcode & 0x0F00 ) >> 8] / 10 ) % 10;
 	memory[I + 2] = ( V[( opcode & 0x0F00 ) >> 8] % 100 ) % 10;
 }
 
-void Emulator::draw( short opcode )
+void Emulator::draw( unsigned short opcode )
 {
 	unsigned short x = V[( opcode & 0x0F00 ) >> 8];
 	unsigned short y = V[( opcode & 0x00F0 ) >> 4];
