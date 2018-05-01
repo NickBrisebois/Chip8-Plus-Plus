@@ -65,7 +65,7 @@ bool Emulator::loadGame( std::string gamePath )
 
 	std::ifstream::pos_type size = game.tellg();
 	unsigned char* buffer = new unsigned char[size];
-	game.seekg( 0, std::ifstream::beg );
+	game.seekg( 0, std::ios::beg );
 	game.read( ( char* )buffer, size );
 	game.close();
 

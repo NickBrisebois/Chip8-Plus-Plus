@@ -13,12 +13,10 @@ int main( int argc, char* argv[] )
 	sf::RenderWindow window( sf::VideoMode( windowHeight, windowWidth ), "Chip 8 Emulator" );
 	
 	Emulator* pChip8 = new Emulator();
-	if( !pChip8->loadGame( "./MAZE" ) ) {
+	pChip8->initialize();
+	if( !pChip8->loadGame( argv[1] ) ) {
 		return -1;
 	}
-
-	sf::RectangleShape pixel( sf::Vector2f( 10, 10 ) );
-	pixel.setSize( sf::Vector2f( 10, 10 ) );
 
 	while( window.isOpen() ) {
 		sf::Event event;
@@ -32,13 +30,23 @@ int main( int argc, char* argv[] )
 		}
 
 		if( pChip8->drawFlag ) {
-			window.draw( pixel );
+			pChip8->drawFlag = false;
+			window.clear();
+			for( int y = 0; y < 32; y++ ) {
+				for( int x = 0; x < 64; x++ ) {
+					if( pChip8->gfx[( y * 64) + x] == 1 ) {
+						sf::RectangleShape pixel( sf::Vector2f( 10, 10 ) );
+						pixel.setPosition( x*10, y*10 );
+						pixel.setFillColor( sf::Color( 255, 255, 255, 255 ) );
+						window.draw(pixel);
+					}
+				}
+			}
 		}
 
 		// For debug
 	//	std::this_thread::sleep_for( std::chrono::seconds( 1 ) );
 
-		window.clear();
 		window.display();
 	}
 
