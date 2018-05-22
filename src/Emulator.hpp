@@ -23,15 +23,14 @@ class Emulator
 		unsigned short stack[16];
 		unsigned short sp;
 		
-		unsigned char key[16];
 		std::ifstream game;
 
 		void handleOpcode( unsigned short opcode );
-		void setIndexReg( unsigned short addr );
 		void clearScreen();
 		void storeBCDVX( unsigned short opcode );
 		void storeRegisters();
 		void loadRegisters();
+		void debug();
 		void draw( unsigned short opcode );
 	public:
 		Emulator();
@@ -39,9 +38,11 @@ class Emulator
 		bool loadGame( std::string gamePath );
 		void emulateCycle();
 		void setKeys();
+		bool canDraw();
 
 		// The graphics in the chip8 are black and white and the screen has a total of 2048 pixels
 		unsigned char gfx[64 * 32];
+		unsigned char key[16];
 		bool drawFlag;
 };
 
