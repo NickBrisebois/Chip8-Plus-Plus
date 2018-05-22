@@ -3,7 +3,7 @@
 #include <iomanip>
 #include "Emulator.hpp"
 
-#define DEBUG false
+#define DEBUG true
 
 Emulator::Emulator()
 {
@@ -13,8 +13,8 @@ Emulator::Emulator()
 
 void Emulator::initialize()
 { 
-	pc = 0x200; // Program counter starts at 0x200 opcode = 0; // Reset current opcode
-	opcode = 0;
+	pc = 0x200; // Program counter starts at 0x200 
+	opcode = 0; // Reset current opcode
 	I = 0; // Reset index register
 	sp = 0; // Reset stack pointer
 	unsigned char fontset[80] = {
@@ -262,7 +262,6 @@ void Emulator::handleOpcode( unsigned short opcode )
 					V[b] = delay_timer;
 					pc += 2;
 					break;
-				// TODO: Implement Fx0A Here
 				case 0x000A:
 					{
 					bool keyPress = false;
@@ -290,11 +289,12 @@ void Emulator::handleOpcode( unsigned short opcode )
 					pc += 2;
 					break;
 				case 0x001E: // ADD I, Vx
+					V[0xF] = ( I + V[b] > 0xFFF ) ? 1 : 0;
 					I += V[b];
 					pc += 2;
 					break;
 				case 0x0029: // LD F, Vx
-					I = V[b * 5]; // This is probably wrong
+					I = V[b] * 0x5; // This is probably wrong
 					pc += 2;
 					break;
 				case 0x0033: // LD B, Vx
@@ -351,14 +351,14 @@ void Emulator::draw( unsigned short opcode )
 
 void Emulator::storeRegisters()
 {
-	for( int i = 0x0; i < 0xF; ++i ) {
+	for( int i = I; i < 0xF; ++i ) {
 		memory[I + i] = V[i];
 	}
 }
 
 void Emulator::loadRegisters()
 {
-	for( int i = 0x0; i < 0xF; ++i ) {
+	for( int i = I; i < 0xF; ++i ) {
 		V[i] = memory[I + i];
 	}
 }
