@@ -3,7 +3,7 @@ A chip 8 emulator written in C++ using SFML
 
 #### Dependencies
 
-	- csfml 2.4-1
+	- sfml
 	- gcc
 	
 #### Building:
