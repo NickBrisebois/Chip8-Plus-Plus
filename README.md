@@ -1,14 +1,27 @@
 # Chip8-Plus-Plus
 A chip 8 emulator written in C++ using SFML
 
-Dependencies:
-	- SFML
+#### Dependencies
 
-Building:
-Just type make in the root of the repo
+	- sfml 2.5.0-1
+	- csfml 2.4-1
+	- gcc
+	
+#### Building:
 
-Running:
-Type ./chip8 ./roms/[ROM] where [ROM] is the game you want to run
+Just type 
+
+	make 
+	
+in the root of the repo
+
+#### Running:
+
+Type 
+
+	./chip8 ./roms/[ROM] 
+
+where [ROM] is the game you want to run
 
 ![screenshot](./screenshot.png)
 
