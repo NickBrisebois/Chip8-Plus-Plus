@@ -5,7 +5,8 @@
 
 #include "Emulator.hpp"
 
-void handleInput( Emulator* pChip8, sf::RenderWindow* pWindow, sf::Event* pEvent );
+
+void handleInput( Emulator* pChip8, sf::Event* pEvent );
 
 int const windowHeight = 640;
 int const windowWidth = 320;
@@ -26,13 +27,6 @@ int main( int argc, char* argv[] )
 		sf::Event event;
 		chip8.emulateCycle();
 
-		while( window.pollEvent( event ) ) {
-			if( event.type == sf::Event::Closed ){
-				window.close();
-			}
-			handleInput( &chip8, &window, &event );
-		}
-
 		if( chip8.canDraw() ) {
 			window.clear();
 			for( int y = 0; y < 32; y++ ) {
@@ -45,17 +39,27 @@ int main( int argc, char* argv[] )
 					}
 				}
 			}
+			// This should be replaced with something much much better
 			std::this_thread::sleep_for( std::chrono::milliseconds( 60 ) );
 		}
 		window.display();
+
+		while( window.pollEvent( event ) ) {
+			if( event.type == sf::Event::Closed ){
+				window.close();
+			}
+			handleInput( &chip8, &event );
+		}
+		
 	}
 
 	return 0;
 }
 
-void handleInput( Emulator* pChip8, sf::RenderWindow* pWindow, sf::Event* pEvent ) 
+void handleInput( Emulator* pChip8, sf::Event* pEvent ) 
 {
 	if( pEvent->type == sf::Event::KeyPressed ) {
+		std::cout << "Key Pressed: " << pEvent->key.code << std::endl; 
 		if( pEvent->key.code == sf::Keyboard::Num1 ) pChip8->key[0x1] = 1;
 		else if( pEvent->key.code == sf::Keyboard::Num2 ) pChip8->key[0x2] = 1;
 		else if( pEvent->key.code == sf::Keyboard::Num3 ) pChip8->key[0x3] = 1;
@@ -77,7 +81,7 @@ void handleInput( Emulator* pChip8, sf::RenderWindow* pWindow, sf::Event* pEvent
 		else if( pEvent->key.code == sf::Keyboard::V ) pChip8->key[0xF] = 1;
 	}
 	
-	else if( pEvent->type == sf::Event::KeyPressed ) {
+	else if( pEvent->type == sf::Event::KeyReleased ) {
 		if( pEvent->key.code == sf::Keyboard::Num1 ) pChip8->key[0x1] = 0;
 		else if( pEvent->key.code == sf::Keyboard::Num2 ) pChip8->key[0x2] = 0;
 		else if( pEvent->key.code == sf::Keyboard::Num3 ) pChip8->key[0x3] = 0;

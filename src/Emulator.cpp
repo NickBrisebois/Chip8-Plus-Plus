@@ -3,15 +3,18 @@
 #include <iomanip>
 #include "Emulator.hpp"
 
+#define DEBUG false
+
 Emulator::Emulator()
 {
-	std::cout << "Emulator has started" << std::endl;
+	if ( DEBUG ) std::cout << "Emulator has started" << std::endl;
 	srand( time(NULL) );
 }
 
 void Emulator::initialize()
 { 
 	pc = 0x200; // Program counter starts at 0x200 opcode = 0; // Reset current opcode
+	opcode = 0;
 	I = 0; // Reset index register
 	sp = 0; // Reset stack pointer
 	unsigned char fontset[80] = {
@@ -73,8 +76,9 @@ bool Emulator::loadGame( std::string gamePath )
 	}
 	
 	delete [] buffer;
-
-	std::cout << gamePath << " successfully loaded into memory" << std::endl;
+	
+	if( DEBUG )
+		std::cout << gamePath << " successfully loaded into memory" << std::endl;
 	return true;
 }
 
@@ -82,7 +86,7 @@ void Emulator::emulateCycle()
 {
 	// One opcode is stored at pc + pc+1 so combine them by doing:
 	opcode = memory[pc] << 8 | memory[pc + 1];
-	std::cout << "Opcode: " << (short)memory[pc] << " " << (short)memory[pc + 1] << std::endl;;
+	if ( DEBUG ) std::cout << "Opcode: " << (short)memory[pc] << " " << (short)memory[pc + 1] << std::endl;;
 	handleOpcode( opcode );
 
 	if( delay_timer > 0 ) {
@@ -106,7 +110,7 @@ void Emulator::handleOpcode( unsigned short opcode )
 	unsigned short d = ( opcode & 0x000F );
 	unsigned short bcd = ( opcode & 0x0FFF );
 	unsigned short cd = ( opcode & 0x00FF );
-	
+
 	switch( opcode & 0xF000 ) {
 		case 0x0000: // Opcodes [0x00E & 0x00EE]
 			switch( d ) {
@@ -122,7 +126,7 @@ void Emulator::handleOpcode( unsigned short opcode )
 		case 0x1000:
 			pc = bcd;
 		case 0x2000: // RET
-			std::cout << "SP: " << sp << std::endl;
+			if ( DEBUG ) std::cout << "SP: " << sp << std::endl;
 			if(sp < 16) {
 				stack[sp] = pc;
 				sp++;
@@ -263,9 +267,10 @@ void Emulator::handleOpcode( unsigned short opcode )
 					{
 					bool keyPress = false;
 
-					for( int i = 0; i < 16; i++ ) {
-						if( key[i] == 1 ) {
+					for( int i = 0; i < 16; ++i ) {
+						if( key[i] != 0 ) {
 							V[( opcode & 0x0F00 ) >> 8] = i;
+							std::cout << key[i] << " == 1" << std::endl;
 							keyPress = true;
 						}
 					}
@@ -306,7 +311,6 @@ void Emulator::handleOpcode( unsigned short opcode )
 					break;
 			}
 	}
-//	std::cout << "\rLast Opcode: " << opcode << std::endl;
 }
 
 void Emulator::clearScreen()
