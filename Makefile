@@ -1,8 +1,8 @@
 CC = g++
 CC_FLAGS = -std=c++11
-LDFLAGS = -lsfml-graphics -lsfml-window -lsfml-system
+LDFLAGS = -lsfml-graphics -lsfml-window -lsfml-system -lGL
 
-FILES = src/*.cpp
+FILES = src/*.cpp libs/imgui/*.cpp libs/imgui-sfml/*.cpp
 OUT_EXE = chip8
 
 build: $(FILES)

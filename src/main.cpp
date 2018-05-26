@@ -3,8 +3,9 @@
 #include <thread>
 #include <iostream>
 
+#include "../libs/imgui/imgui.h"
+#include "../libs/imgui-sfml/imgui-SFML.h"
 #include "Emulator.hpp"
-
 
 void handleInput( Emulator* pChip8, sf::Event* pEvent );
 
@@ -16,6 +17,11 @@ int main( int argc, char* argv[] )
 	sf::RenderWindow window( sf::VideoMode( windowHeight, windowWidth ), "Chip 8 Emulator" );
 	window.setKeyRepeatEnabled( false );
 
+	ImGui::SFML::Init( window );
+
+	/**
+	 * Let's turn on the Chip8
+	 */
 	Emulator chip8;
 	chip8.initialize();
 
@@ -23,6 +29,7 @@ int main( int argc, char* argv[] )
 		return -1;
 	}
 
+	sf::Clock deltaClock;
 	while( window.isOpen() ) {
 		sf::Event event;
 		chip8.emulateCycle();
@@ -39,17 +46,30 @@ int main( int argc, char* argv[] )
 					}
 				}
 			}
-			// This should be replaced with something much much better
-			std::this_thread::sleep_for( std::chrono::milliseconds( 60 ) );
 		}
-		window.display();
 
 		while( window.pollEvent( event ) ) {
+
+			ImGui::SFML::ProcessEvent( event );
+
 			if( event.type == sf::Event::Closed ){
 				window.close();
 			}
 			handleInput( &chip8, &event );
 		}
+
+		/**
+		 * ImGUI Debug Window Code
+		 */
+		ImGui::SFML::Update( window, deltaClock.restart() );
+		ImGui::Begin( "Debug" );
+		ImGui::End();
+
+		ImGui::SFML::Render( window );
+		
+		sf::sleep( sf::microseconds(1) );
+		
+		window.display();
 		
 	}
 

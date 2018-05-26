@@ -52,6 +52,8 @@ void Emulator::initialize()
 	for( int i = 0; i < 80; ++i ) {
 		memory[i] = fontset[i];
 	}
+	
+	drawFlag = true;
 }
 
 bool Emulator::loadGame( std::string gamePath )
@@ -119,21 +121,18 @@ void Emulator::handleOpcode( unsigned short opcode )
 					pc += 2;
 					break;
 				case 0x000E: // RET
-					pc = stack[sp-1];
 					sp--;
+					pc = stack[sp];
 					break;
 			}
 		case 0x1000:
 			pc = bcd;
 		case 0x2000: // RET
 			if ( DEBUG ) std::cout << "SP: " << sp << std::endl;
-			if(sp < 16) {
-				stack[sp] = pc;
-				sp++;
-				pc = bcd;
-			} else {
-				sp = 0;
-			}
+			stack[sp] = pc;
+			// Reset stack pointer to 0 if it surpasses 16
+			sp = ( sp > 16 ) ? 0 : ++sp;
+			pc = bcd;
 			break;
 		case 0x3000: // SE Vx, byte
 			if( V[b] == cd ) {
@@ -180,37 +179,25 @@ void Emulator::handleOpcode( unsigned short opcode )
 					pc += 2;
 					break;
 				case 0x0004: // ADD Vx, Vy
-					if( V[b] + V[c] > 0xFF ) {
-						V[0xF] = 1;
-					} else {
-						V[0xF] = 0;
-					}
+					V[0xF] = ( V[b] + V[c] > 0xFF ) ? 1 : 0;
 					V[b] += V[c];
 					pc += 2;
 					break;
 				case 0x0005: // SUB Vx, Vy
-					if( V[b] > V[c] ) {
-						V[0xF] = 1;
-					}else{
-						V[0XF] = 0;
-					}
+					V[0xF] = ( V[b] > V[c] ) ? 0 : 1;
 					V[b] -= V[c];
 					pc += 2;
 					break;
 				case 0x0006: // SHR Vx {, Vy}
-					if( V[b] >> 3 == 1 ) {
-						V[0xF] = 1;
-					} else {
-						V[0xF] = 0;
-					}
-					V[b] /= 2;
+					V[0xF] = V[b] & 0x1;
+					V[b] >>= 1;
 					pc += 2;
 					break;
 				case 0x0007: // SUBN Vx, Vy
 					if( V[c] > V[b] ) {
-						V[0xF] = 1;
-					} else {
 						V[0xF] = 0;
+					} else {
+						V[0xF] = 1;
 					}
 					V[b] = V[c] - V[b];
 					pc += 2;
@@ -223,7 +210,7 @@ void Emulator::handleOpcode( unsigned short opcode )
 			}
 			break;
 		case 0x9000: // SNE Vx, Vy
-			if( V[b] == V[c] ) {
+			if( V[b] != V[c] ) {
 				pc += 2;
 			}
 			pc += 2;
