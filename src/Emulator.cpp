@@ -1,13 +1,9 @@
 #include <iostream>
-#include <fstream>
-#include <iomanip>
 #include "Emulator.hpp"
-
-#define DEBUG true
 
 Emulator::Emulator()
 {
-	if ( DEBUG ) std::cout << "Emulator has started" << std::endl;
+	std::cout << "Emulator has started" << std::endl;
 	srand( time(NULL) );
 }
 
@@ -79,8 +75,7 @@ bool Emulator::loadGame( std::string gamePath )
 	
 	delete [] buffer;
 	
-	if( DEBUG )
-		std::cout << gamePath << " successfully loaded into memory" << std::endl;
+	std::cout << gamePath << " successfully loaded into memory" << std::endl;
 	return true;
 }
 
@@ -88,7 +83,6 @@ void Emulator::emulateCycle()
 {
 	// One opcode is stored at pc + pc+1 so combine them by doing:
 	opcode = memory[pc] << 8 | memory[pc + 1];
-	if ( DEBUG ) std::cout << "Opcode: " << (short)memory[pc] << " " << (short)memory[pc + 1] << std::endl;;
 	handleOpcode( opcode );
 
 	if( delay_timer > 0 ) {
@@ -128,7 +122,6 @@ void Emulator::handleOpcode( unsigned short opcode )
 		case 0x1000:
 			pc = bcd;
 		case 0x2000: // RET
-			if ( DEBUG ) std::cout << "SP: " << sp << std::endl;
 			stack[sp] = pc;
 			// Reset stack pointer to 0 if it surpasses 16
 			sp = ( sp > 16 ) ? 0 : ++sp;
@@ -357,4 +350,18 @@ bool Emulator::canDraw()
 		return true;
 	}
 	return false;
+}
+
+Emulator::debugInfo Emulator::getDebugInfo()
+{
+	debugInfo info;
+	info.opcode = opcode;
+	std::copy( std::begin( memory ), std::end( memory ), std::begin( info.memory ));
+	std::copy( std::begin( V ), std::end( V ), std::begin( info.V ));
+	info.I = I;
+	info.pc = pc;
+	std::copy( std::begin( stack ), std::end( stack ), std::begin( info.stack ));
+	info.sp = sp;
+	info.drawFlag = drawFlag;
+	return info;
 }

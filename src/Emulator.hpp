@@ -39,7 +39,17 @@ class Emulator
 		void emulateCycle();
 		void setKeys();
 		bool canDraw();
-
+		struct debugInfo {
+			unsigned short opcode;
+			unsigned char memory[4096];
+			unsigned char V[16];
+			unsigned short I;
+			unsigned short pc;
+			unsigned short stack[16];
+			unsigned short sp;
+			bool drawFlag;
+		};
+		debugInfo getDebugInfo();
 		// The graphics in the chip8 are black and white and the screen has a total of 2048 pixels
 		unsigned char gfx[64 * 32];
 		unsigned char key[16];
