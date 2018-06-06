@@ -20,7 +20,7 @@ unsigned char toDraw[64 * 32];
 int main( int argc, char* argv[] ) 
 {
 	sf::RenderWindow window( sf::VideoMode( windowHeight, windowWidth ), "Chip 8 Emulator" );
-	window.setKeyRepeatEnabled( false );
+	window.setFramerateLimit(60);
 
 	if( DEBUG ) ImGui::SFML::Init( window );
 
@@ -37,13 +37,8 @@ int main( int argc, char* argv[] )
 	}
 
 	sf::Clock deltaClock;
+	sf::Event event;
 	while( window.isOpen() ) {
-		sf::Event event;
-		chip8.emulateCycle();
-
-		if( chip8.canDraw() ) {
-			std::copy( std::begin( chip8.gfx ), std::end( chip8.gfx ), std::begin( toDraw ) );
-		}
 
 		while( window.pollEvent( event ) ) {
 			if( DEBUG ) ImGui::SFML::ProcessEvent( event );
@@ -53,6 +48,12 @@ int main( int argc, char* argv[] )
 			}
 
 			handleInput( &chip8, &event );
+		}
+
+		chip8.emulateCycle();
+
+		if( chip8.canDraw() ) {
+			std::copy( std::begin( chip8.gfx ), std::end( chip8.gfx ), std::begin( toDraw ) );
 		}
 			
 		redraw( &window );
@@ -75,39 +76,63 @@ int main( int argc, char* argv[] )
 			ImGui::SFML::Render( window );
 		}
 		
-		sf::sleep( sf::microseconds(600) );
-		
 		window.display();
-		
 	}
 
 	return 0;
 }
 
+/**
+ * There has to be a better way to do the below
+ */
 void handleInput( Emulator* pChip8, sf::Event* pEvent ) 
 {
-	int keyVal = ( pEvent->type == sf::Event::KeyPressed ) ? 1 : 0;
+	if( pEvent->type == sf::Event::KeyPressed ) {
+		if( pEvent->key.code == sf::Keyboard::Num1 ) pChip8->key[0x1] = 1;
+		else if( pEvent->key.code == sf::Keyboard::Num2 ) pChip8->key[0x2] = 1;
+		else if( pEvent->key.code == sf::Keyboard::Num3 ) pChip8->key[0x3] = 1;
+		else if( pEvent->key.code == sf::Keyboard::Num4 ) pChip8->key[0xC] = 1;
+		
+		else if( pEvent->key.code == sf::Keyboard::Q ) pChip8->key[0x4] = 1;
+		else if( pEvent->key.code ==  sf::Keyboard::W ) pChip8->key[0x5] = 1;
+		else if( pEvent->key.code ==  sf::Keyboard::E ) pChip8->key[0x6] = 1;
+		else if( pEvent->key.code ==  sf::Keyboard::R ) pChip8->key[0xD] = 1;
 
-	if( pEvent->key.code == sf::Keyboard::Num1 ) pChip8->key[0x1] = keyVal;
-	else if( pEvent->key.code == sf::Keyboard::Num2 ) pChip8->key[0x2] = keyVal;
-	else if( pEvent->key.code == sf::Keyboard::Num3 ) pChip8->key[0x3] = keyVal;
-	else if( pEvent->key.code == sf::Keyboard::Num4 ) pChip8->key[0xC] = keyVal;
+		else if( pEvent->key.code == sf::Keyboard::A ) pChip8->key[0x7] = 1;
+		else if( pEvent->key.code ==  sf::Keyboard::S ) pChip8->key[0x8] = 1;
+		else if( pEvent->key.code == sf::Keyboard::D ) pChip8->key[0x9] = 1;
+		else if( pEvent->key.code == sf::Keyboard::F ) pChip8->key[0xE] = 1;
+
+		else if( pEvent->key.code == sf::Keyboard::Z ) pChip8->key[0xA] = 1;
+		else if( pEvent->key.code == sf::Keyboard::X ) pChip8->key[0x0] = 1;
+		else if( pEvent->key.code == sf::Keyboard::C ) pChip8->key[0xB] = 1;
+		else if( pEvent->key.code == sf::Keyboard::V ) pChip8->key[0xF] = 1;
+	}
 	
-	else if( pEvent->key.code == sf::Keyboard::Q ) pChip8->key[0x4] = keyVal;
-	else if( pEvent->key.code ==  sf::Keyboard::W ) pChip8->key[0x5] = keyVal;
-	else if( pEvent->key.code ==  sf::Keyboard::E ) pChip8->key[0x6] = keyVal;
-	else if( pEvent->key.code ==  sf::Keyboard::R ) pChip8->key[0xD] = keyVal;
+	else if( pEvent->type == sf::Event::KeyReleased ) {
+		if( pEvent->key.code == sf::Keyboard::Num1 ) pChip8->key[0x1] = 0;
+		else if( pEvent->key.code == sf::Keyboard::Num2 ) pChip8->key[0x2] = 0;
+		else if( pEvent->key.code == sf::Keyboard::Num3 ) pChip8->key[0x3] = 0;
+		else if( pEvent->key.code == sf::Keyboard::Num4 ) pChip8->key[0xC] = 0;
+		
+		else if( pEvent->key.code == sf::Keyboard::Q ) pChip8->key[0x4] = 0;
+		else if( pEvent->key.code ==  sf::Keyboard::W ) pChip8->key[0x5] = 0;
+		else if( pEvent->key.code ==  sf::Keyboard::E ) pChip8->key[0x6] = 0;
+		else if( pEvent->key.code ==  sf::Keyboard::R ) pChip8->key[0xD] = 0;
 
-	else if( pEvent->key.code == sf::Keyboard::A ) pChip8->key[0x7] = keyVal;
-	else if( pEvent->key.code ==  sf::Keyboard::S ) pChip8->key[0x8] = keyVal;
-	else if( pEvent->key.code == sf::Keyboard::D ) pChip8->key[0x9] = keyVal;
-	else if( pEvent->key.code == sf::Keyboard::F ) pChip8->key[0xE] = keyVal;
+		else if( pEvent->key.code == sf::Keyboard::A ) pChip8->key[0x7] = 0;
+		else if( pEvent->key.code ==  sf::Keyboard::S ) pChip8->key[0x8] = 0;
+		else if( pEvent->key.code == sf::Keyboard::D ) pChip8->key[0x9] = 0;
+		else if( pEvent->key.code == sf::Keyboard::F ) pChip8->key[0xE] = 0;
 
-	else if( pEvent->key.code == sf::Keyboard::Z ) pChip8->key[0xA] = keyVal;
-	else if( pEvent->key.code == sf::Keyboard::X ) pChip8->key[0x0] = keyVal;
-	else if( pEvent->key.code == sf::Keyboard::C ) pChip8->key[0xB] = keyVal;
-	else if( pEvent->key.code == sf::Keyboard::V ) pChip8->key[0xF] = keyVal;
+		else if( pEvent->key.code == sf::Keyboard::Z ) pChip8->key[0xA] = 0;
+		else if( pEvent->key.code == sf::Keyboard::X ) pChip8->key[0x0] = 0;
+		else if( pEvent->key.code == sf::Keyboard::C ) pChip8->key[0xB] = 0;
+		else if( pEvent->key.code == sf::Keyboard::V ) pChip8->key[0xF] = 0;
+	}
+
 }
+
 
 void redraw( sf::RenderWindow* pWindow )
 {

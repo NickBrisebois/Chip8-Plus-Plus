@@ -249,7 +249,6 @@ void Emulator::handleOpcode( unsigned short opcode )
 					for( int i = 0; i < 16; ++i ) {
 						if( key[i] != 0 ) {
 							V[( opcode & 0x0F00 ) >> 8] = i;
-							std::cout << key[i] << " == 1" << std::endl;
 							keyPress = true;
 						}
 					}
