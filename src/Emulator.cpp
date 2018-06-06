@@ -115,16 +115,18 @@ void Emulator::handleOpcode( unsigned short opcode )
 					pc += 2;
 					break;
 				case 0x000E: // RET
-					sp--;
+					--sp;
 					pc = stack[sp];
 					break;
 			}
+			break;
 		case 0x1000:
 			pc = bcd;
+			break;
 		case 0x2000: // RET
 			stack[sp] = pc;
 			// Reset stack pointer to 0 if it surpasses 16
-			sp = ( sp > 16 ) ? 0 : ++sp;
+			sp++;
 			pc = bcd;
 			break;
 		case 0x3000: // SE Vx, byte
@@ -172,7 +174,7 @@ void Emulator::handleOpcode( unsigned short opcode )
 					pc += 2;
 					break;
 				case 0x0004: // ADD Vx, Vy
-					V[0xF] = ( V[b] + V[c] > 0xFF ) ? 1 : 0;
+					V[0xF] = ( ( V[b] + V[c] ) > 0xFF ) ? 1 : 0;
 					V[b] += V[c];
 					pc += 2;
 					break;
@@ -187,7 +189,7 @@ void Emulator::handleOpcode( unsigned short opcode )
 					pc += 2;
 					break;
 				case 0x0007: // SUBN Vx, Vy
-					if( V[c] > V[b] ) {
+					if( V[b] > V[c] ) {
 						V[0xF] = 0;
 					} else {
 						V[0xF] = 1;
@@ -196,8 +198,8 @@ void Emulator::handleOpcode( unsigned short opcode )
 					pc += 2;
 					break;
 				case 0x000E: // SHL Vx {, Vy}
-					V[0xf] = V[c] >> 7;
-					V[c] <<= 1;
+					V[0xf] = V[b] >> 7;
+					V[b] <<= 1;
 					pc += 2;
 					break;
 			}
@@ -234,7 +236,6 @@ void Emulator::handleOpcode( unsigned short opcode )
 						pc += 2;
 					break;
 			}
-			pc += 2;
 			break;
 		case 0xF000:
 			switch( opcode & 0x00FF ) {
