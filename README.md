@@ -4,6 +4,8 @@ A chip 8 emulator written in C++ using SFML
 #### Dependencies
 
 	- sfml
+	- imgui
+	- imgui-sfml
 	- gcc
 	
 #### Building:
