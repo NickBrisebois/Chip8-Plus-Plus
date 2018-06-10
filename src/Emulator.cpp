@@ -353,16 +353,16 @@ bool Emulator::canDraw()
 	return false;
 }
 
-Emulator::debugInfo* Emulator::getDebugInfo()
+Emulator::debugInfo Emulator::getDebugInfo()
 {
-	debugInfo* info = (debugInfo*)malloc( sizeof( debugInfo ) );
-	info->opcode = opcode;
-	memcpy( info->memory, memory, sizeof( memory ) );
-	memcpy( info->V, V, sizeof( V ) );
-	memcpy( info->stack, stack, sizeof( stack ) );
-	info->I = I;
-	info->pc = pc;
-	info->sp = sp;
-	info->drawFlag = drawFlag;
+	debugInfo info;
+	info.opcode = opcode;
+	memcpy( info.memory, memory, sizeof( memory ) );
+	memcpy( info.V, V, sizeof( V ) );
+	info.I = I;
+	info.pc = pc;
+	memcpy( info.stack, stack, sizeof( stack ) );
+	info.sp = sp;
+	info.drawFlag = drawFlag;
 	return info;
 }

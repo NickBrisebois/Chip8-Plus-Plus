@@ -49,7 +49,7 @@ class Emulator
 			unsigned short sp;
 			bool drawFlag;
 		};
-		debugInfo* getDebugInfo();
+		debugInfo getDebugInfo();
 		// The graphics in the chip8 are black and white and the screen has a total of 2048 pixels
 		unsigned char gfx[64 * 32];
 		unsigned char key[16];
