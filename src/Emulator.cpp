@@ -1,4 +1,5 @@
 #include <iostream>
+#include <cstring>
 #include "Emulator.hpp"
 
 Emulator::Emulator()
@@ -125,7 +126,6 @@ void Emulator::handleOpcode( unsigned short opcode )
 			break;
 		case 0x2000: // RET
 			stack[sp] = pc;
-			// Reset stack pointer to 0 if it surpasses 16
 			sp++;
 			pc = bcd;
 			break;
@@ -179,7 +179,7 @@ void Emulator::handleOpcode( unsigned short opcode )
 					pc += 2;
 					break;
 				case 0x0005: // SUB Vx, Vy
-					V[0xF] = ( V[b] > V[c] ) ? 0 : 1;
+					V[0xF] = ( V[c] > V[b] ) ? 0 : 1;
 					V[b] -= V[c];
 					pc += 2;
 					break;
@@ -228,11 +228,11 @@ void Emulator::handleOpcode( unsigned short opcode )
 		case 0xE000:
 			switch( opcode & 0x00FF ) {
 				case 0x009E: // Ex9E:
-					if( key[V[( opcode & 0x0F00 )  >> 8]] != 0 )
+					if( key[V[b]] != 0 )
 						pc += 2;
 					break;
 				case 0x00A1:
-					if( key[V[( opcode & 0x0F00 ) >> 8]] == 0 )
+					if( key[V[b]] == 0 )
 						pc += 2;
 					break;
 			}
@@ -274,7 +274,7 @@ void Emulator::handleOpcode( unsigned short opcode )
 					pc += 2;
 					break;
 				case 0x0029: // LD F, Vx
-					I = V[b] * 0x5; // This is probably wrong
+					I = V[b] * 0x5; 
 					pc += 2;
 					break;
 				case 0x0033: // LD B, Vx
@@ -290,6 +290,7 @@ void Emulator::handleOpcode( unsigned short opcode )
 					pc += 2;
 					break;
 			}
+			break;
 	}
 }
 
@@ -352,16 +353,16 @@ bool Emulator::canDraw()
 	return false;
 }
 
-Emulator::debugInfo Emulator::getDebugInfo()
+Emulator::debugInfo* Emulator::getDebugInfo()
 {
-	debugInfo info;
-	info.opcode = opcode;
-	std::copy( std::begin( memory ), std::end( memory ), std::begin( info.memory ));
-	std::copy( std::begin( V ), std::end( V ), std::begin( info.V ));
-	info.I = I;
-	info.pc = pc;
-	std::copy( std::begin( stack ), std::end( stack ), std::begin( info.stack ));
-	info.sp = sp;
-	info.drawFlag = drawFlag;
+	debugInfo* info = (debugInfo*)malloc( sizeof( debugInfo ) );
+	info->opcode = opcode;
+	memcpy( info->memory, memory, sizeof( memory ) );
+	memcpy( info->V, V, sizeof( V ) );
+	memcpy( info->stack, stack, sizeof( stack ) );
+	info->I = I;
+	info->pc = pc;
+	info->sp = sp;
+	info->drawFlag = drawFlag;
 	return info;
 }

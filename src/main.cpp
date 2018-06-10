@@ -11,11 +11,14 @@
 
 void handleInput( Emulator* pChip8, sf::Event* pEvent );
 void redraw( sf::RenderWindow* pWindow);
+void windowCycle( sf::RenderWindow* pWindow, Emulator::debugInfo* pDebugInfo, Emulator* pChip8 );
 
 int const windowHeight = 640;
 int const windowWidth = 320;
 
 unsigned char toDraw[64 * 32];
+sf::Clock deltaClock;
+sf::Event event;
 
 int main( int argc, char* argv[] ) 
 {
@@ -30,56 +33,62 @@ int main( int argc, char* argv[] )
 	Emulator chip8;
 	chip8.initialize();
 	
-	Emulator::debugInfo debugInfo;
+	Emulator::debugInfo* pDebugInfo;
 
 	if( !chip8.loadGame( argv[1] ) ) {
 		return -1;
 	}
-
-	sf::Clock deltaClock;
-	sf::Event event;
+	
 	while( window.isOpen() ) {
-
-		while( window.pollEvent( event ) ) {
-			if( DEBUG ) ImGui::SFML::ProcessEvent( event );
-
-			if( event.type == sf::Event::Closed ){
-				window.close();
-			}
-
-			handleInput( &chip8, &event );
-		}
-
-		chip8.emulateCycle();
-
-		if( chip8.canDraw() ) {
-			std::copy( std::begin( chip8.gfx ), std::end( chip8.gfx ), std::begin( toDraw ) );
-		}
-			
-		redraw( &window );
-
-		if( DEBUG ) {
-			/**
-			 * ImGUI Debug Window Code
-			 */
-			debugInfo = chip8.getDebugInfo();
-			ImGui::SFML::Update( window, deltaClock.restart() );
-			ImGui::Begin( "Debug" );
-			
-			ImGui::Text( "Opcode: %x", debugInfo.opcode );
-			ImGui::Text( "Index Register: %x", debugInfo.I );
-			ImGui::Text( "Program Counter: %x", debugInfo.pc );
-			ImGui::Text( "Stack Pointer: %x", debugInfo.sp );
-			ImGui::Text( "Draw Flag: %d", debugInfo.drawFlag );
-			
-			ImGui::End();
-			ImGui::SFML::Render( window );
-		}
-		
-		window.display();
+		windowCycle( &window, pDebugInfo, &chip8 );
 	}
 
 	return 0;
+}
+
+void windowCycle( sf::RenderWindow* pWindow, Emulator::debugInfo* pDebugInfo, Emulator* pChip8 ) {
+	if( DEBUG ) pDebugInfo = pChip8->getDebugInfo();
+
+	while( pWindow->pollEvent( event ) ) {
+		if( DEBUG ) ImGui::SFML::ProcessEvent( event );
+
+		if( event.type == sf::Event::Closed ){
+			pWindow->close();
+		}
+
+		handleInput( pChip8, &event );
+	}
+
+	pChip8->emulateCycle();
+
+	if( pChip8->canDraw() ) {
+		std::copy( std::begin( pChip8->gfx ), std::end( pChip8->gfx ), std::begin( toDraw ) );
+	}
+		
+	redraw( pWindow );
+
+	if( DEBUG ) {
+		/**
+		 * ImGUI Debug Window Code
+		 */
+		ImGui::SFML::Update( *pWindow, deltaClock.restart() );
+		ImGui::Begin( "Debug" );
+		
+		ImGui::Text( "Opcode: %x", pDebugInfo->opcode );
+		ImGui::Text( "Index Register: %x", pDebugInfo->I );
+		ImGui::Text( "Program Counter: %x", pDebugInfo->pc );
+		ImGui::Text( "Stack Pointer: %x", pDebugInfo->sp );
+		ImGui::Text( "Draw Flag: %d", pDebugInfo->drawFlag );
+
+		ImGui::Button( "Stop" );
+		ImGui::Button( "Start" );
+		ImGui::Button( "Step" );
+		
+		ImGui::End();
+		ImGui::SFML::Render( *pWindow );
+	}
+	
+	pWindow->display();
 }
 
 /**
