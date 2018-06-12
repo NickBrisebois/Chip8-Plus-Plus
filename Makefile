@@ -1,5 +1,5 @@
 CC = g++
-CC_FLAGS = -std=c++11
+CC_FLAGS = -std=c++11 -pedantic
 LDFLAGS = -lsfml-graphics -lsfml-window -lsfml-system -lGL
 
 FILES = src/*.cpp libs/imgui/*.cpp libs/imgui-sfml/*.cpp

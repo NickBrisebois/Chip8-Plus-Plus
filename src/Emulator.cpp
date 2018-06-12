@@ -14,6 +14,8 @@ void Emulator::initialize()
 	opcode = 0; // Reset current opcode
 	I = 0; // Reset index register
 	sp = 0; // Reset stack pointer
+	sound_timer = 0;
+	delay_timer = 0;
 	unsigned char fontset[80] = {
 		0xf0, 0x90, 0x90, 0x90, 0xF0, // 0
 		0x20, 0x60, 0x20, 0x20, 0x70, // 1
@@ -43,6 +45,15 @@ void Emulator::initialize()
 	// Clear memory
 	for( int i = 0; i < 4096; ++i ) {
 		memory[i] = 0;
+	}
+
+	// Clear registers
+	for( int i = 0; i < 16; ++i ) {
+		V[i] = 0;
+	}
+
+	for( int i = 0; i < 16; ++i ) {
+		key[i] = 0;
 	}
 
 	// Beginning of memory holds the font set 
@@ -101,7 +112,6 @@ void Emulator::emulateCycle()
 void Emulator::handleOpcode( unsigned short opcode ) 
 {
 	// Opcode represented as ABCD
-	unsigned short a = ( opcode & 0xF000 ) >> 12;
 	unsigned short b = ( opcode & 0x0F00 ) >> 8;
 	unsigned short c = ( opcode & 0x00F0 ) >> 4;
 	unsigned short d = ( opcode & 0x000F );
@@ -245,19 +255,19 @@ void Emulator::handleOpcode( unsigned short opcode )
 					break;
 				case 0x000A:
 					{
-					bool keyPress = false;
+						bool keyPress = false;
 
-					for( int i = 0; i < 16; ++i ) {
-						if( key[i] != 0 ) {
-							V[( opcode & 0x0F00 ) >> 8] = i;
-							keyPress = true;
+						for( int i = 0; i < 16; ++i ) {
+							if( key[i] != 0 ) {
+								V[( opcode & 0x0F00 ) >> 8] = i;
+								keyPress = true;
+							}
 						}
-					}
 
-					if( !keyPress )
-						return;
+						if( !keyPress )
+							return;
 
-					pc += 2;
+						pc += 2;
 					}
 					break;
 				case 0x0015: // LD DT, Vx
@@ -282,11 +292,13 @@ void Emulator::handleOpcode( unsigned short opcode )
 					pc += 2;
 					break;
 				case 0x0055: // LD [I], Vx
-					storeRegisters();
+					storeRegisters( b );
+					I = b + 1;
 					pc += 2;
 					break;
 				case 0x0065: // LD Vx, [I]
-					loadRegisters();
+					loadRegisters( b );
+					I = b + 1;
 					pc += 2;
 					break;
 			}
@@ -330,16 +342,16 @@ void Emulator::draw( unsigned short opcode )
 	drawFlag = true;
 }
 
-void Emulator::storeRegisters()
+void Emulator::storeRegisters( unsigned short b )
 {
-	for( int i = I; i < 0xF; ++i ) {
+	for( int i = 0; i <= b; ++i ) {
 		memory[I + i] = V[i];
 	}
 }
 
-void Emulator::loadRegisters()
+void Emulator::loadRegisters( unsigned short b )
 {
-	for( int i = I; i < 0xF; ++i ) {
+	for( int i = 0; i <= b; ++i ) {
 		V[i] = memory[I + i];
 	}
 }
@@ -356,9 +368,11 @@ bool Emulator::canDraw()
 Emulator::debugInfo Emulator::getDebugInfo()
 {
 	debugInfo info;
-	info.opcode = opcode;
+	info.prevOpcode = opcode;
+	info.nextOpcode = memory[pc] << 8 | memory[pc + 1];
 	memcpy( info.memory, memory, sizeof( memory ) );
 	memcpy( info.V, V, sizeof( V ) );
+	memcpy( info.key, key, sizeof( key ) );
 	info.I = I;
 	info.pc = pc;
 	memcpy( info.stack, stack, sizeof( stack ) );

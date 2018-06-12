@@ -9,9 +9,11 @@
 
 #define DEBUG true
 
-void handleInput( Emulator* pChip8, sf::Event* pEvent );
+void handleKeyDown( Emulator* pChip8, sf::Event* pEvent );
+void handleKeyUp( Emulator* pChip8, sf::Event* pEvent );
 void redraw( sf::RenderWindow* pWindow);
 void windowCycle( sf::RenderWindow* pWindow, Emulator* pChip8 );
+void debugWindow( sf::RenderWindow* pWindow, Emulator::debugInfo* pDebugInfo, bool* pGameToggled, Emulator* pChip8, sf::Clock* pDeltaClock );
 
 int const windowHeight = 640;
 int const windowWidth = 320;
@@ -48,36 +50,18 @@ int main( int argc, char* argv[] )
 				window.close();
 			}
 			
-			if( gameToggled )
-				handleInput( &chip8, &event );
+			if( gameToggled ) {
+				handleKeyDown( &chip8, &event );
+				handleKeyUp( &chip8, &event );
+			}
 		}
 
 		if( gameToggled ) 
 			windowCycle( &window, &chip8 );
 		
-		redraw( &window );
-
 		if( DEBUG ) {
 			debugInfo = chip8.getDebugInfo();
-			/**
-			 * ImGUI Debug Window Code
-			 */
-			ImGui::SFML::Update( window, deltaClock.restart() );
-			ImGui::Begin( "Debug" );
-			
-			ImGui::Text( "Opcode: %x", debugInfo.opcode );
-			ImGui::Text( "Index Register: %x", debugInfo.I );
-			ImGui::Text( "Program Counter: %x", debugInfo.pc );
-			ImGui::Text( "Stack Pointer: %x", debugInfo.sp );
-			ImGui::Text( "Draw Flag: %d", debugInfo.drawFlag );
-
-			if( ImGui::Button( "Play/Pause" ) )
-				gameToggled = !gameToggled;
-			if( ImGui::Button( "Step" ) )
-				windowCycle( &window, &chip8 );
-			
-			ImGui::End();
-			ImGui::SFML::Render( window );
+			debugWindow( &window, &debugInfo, &gameToggled, &chip8, &deltaClock );
 		}
 		window.display();
 	}
@@ -91,12 +75,14 @@ void windowCycle( sf::RenderWindow* pWindow, Emulator* pChip8 ) {
 	if( pChip8->canDraw() ) {
 		std::copy( std::begin( pChip8->gfx ), std::end( pChip8->gfx ), std::begin( toDraw ) );
 	}
+	
+	redraw( pWindow );
 }
 
 /**
  * There has to be a better way to do the below
  */
-void handleInput( Emulator* pChip8, sf::Event* pEvent ) 
+void handleKeyDown( Emulator* pChip8, sf::Event* pEvent ) 
 {
 	if( pEvent->type == sf::Event::KeyPressed ) {
 		if( pEvent->key.code == sf::Keyboard::Num1 ) pChip8->key[0x1] = 1;
@@ -119,8 +105,12 @@ void handleInput( Emulator* pChip8, sf::Event* pEvent )
 		else if( pEvent->key.code == sf::Keyboard::C ) pChip8->key[0xB] = 1;
 		else if( pEvent->key.code == sf::Keyboard::V ) pChip8->key[0xF] = 1;
 	}
-	
-	else if( pEvent->type == sf::Event::KeyReleased ) {
+
+}
+
+void handleKeyUp( Emulator* pChip8, sf::Event* pEvent ) 
+{
+	if( pEvent->type == sf::Event::KeyReleased ) {
 		if( pEvent->key.code == sf::Keyboard::Num1 ) pChip8->key[0x1] = 0;
 		else if( pEvent->key.code == sf::Keyboard::Num2 ) pChip8->key[0x2] = 0;
 		else if( pEvent->key.code == sf::Keyboard::Num3 ) pChip8->key[0x3] = 0;
@@ -141,9 +131,7 @@ void handleInput( Emulator* pChip8, sf::Event* pEvent )
 		else if( pEvent->key.code == sf::Keyboard::C ) pChip8->key[0xB] = 0;
 		else if( pEvent->key.code == sf::Keyboard::V ) pChip8->key[0xF] = 0;
 	}
-
 }
-
 
 void redraw( sf::RenderWindow* pWindow )
 {
@@ -160,5 +148,44 @@ void redraw( sf::RenderWindow* pWindow )
 	}
 }
 
+void debugWindow( sf::RenderWindow* pWindow, Emulator::debugInfo* pDebugInfo, bool* pGameToggled, Emulator* pChip8, sf::Clock* pDeltaClock )
+{
+	/**
+	 * ImGUI Debug Window Code
+	 */
+	ImGui::SFML::Update( *pWindow, pDeltaClock->restart() );
+	ImGui::Begin( "Debug" );
+	
+	ImGui::Text( "Prev Opcode: %x", pDebugInfo->prevOpcode );
+	ImGui::Text( "Next Opcode: %x", pDebugInfo->nextOpcode );
+	ImGui::Text( "Index Reg: %x", pDebugInfo->I );
+	ImGui::Text( "Prog Counter: %x", pDebugInfo->pc );
+	ImGui::Text( "Stack Pointer: %x", pDebugInfo->sp );
+	ImGui::Text( "Draw Flag: %d", pDebugInfo->drawFlag );
+	if( ImGui::Button( "Play/Pause" ) )
+		*pGameToggled = !*pGameToggled;
+	if( ImGui::Button( "Step" ) )
+		windowCycle( pWindow, pChip8 );
+	ImGui::End();
 
+	ImGui::Begin( "Stack" );
+	for( int i = 0; i < 16; i++ ) {
+		ImGui::Text( "%x: %x", i, pDebugInfo->stack[i] );
+	}
+	ImGui::End();
+
+	ImGui::Begin( "Registers" );
+	for( int i = 0; i < 16; i++ ) {
+		ImGui::Text( "%x: %x", i, pDebugInfo->V[i] );
+	}
+	ImGui::End();
+
+	ImGui::Begin( "Pressed Keys" );
+	for( int i = 0; i < 16; i++ ) {
+		ImGui::Text( "%x: %d", i, pDebugInfo->key[i] );
+	}
+	ImGui::End();
+
+	ImGui::SFML::Render( *pWindow );
+}
 

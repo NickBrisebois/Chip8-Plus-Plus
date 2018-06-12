@@ -28,8 +28,8 @@ class Emulator
 		void handleOpcode( unsigned short opcode );
 		void clearScreen();
 		void storeBCDVX( unsigned short opcode );
-		void storeRegisters();
-		void loadRegisters();
+		void storeRegisters( unsigned short b );
+		void loadRegisters( unsigned short b );
 		void debug();
 		void draw( unsigned short opcode );
 	public:
@@ -40,9 +40,11 @@ class Emulator
 		void setKeys();
 		bool canDraw();
 		struct debugInfo {
-			unsigned short opcode;
+			unsigned short prevOpcode;
+			unsigned short nextOpcode;
 			unsigned char memory[4096];
 			unsigned char V[16];
+			unsigned char key[16];
 			unsigned short I;
 			unsigned short pc;
 			unsigned short stack[16];
