@@ -1,6 +1,6 @@
 #include <SFML/Graphics.hpp>
+#include <SFML/Audio.hpp>
 #include <sys/time.h>
-#include <thread>
 #include <iostream>
 
 #include "../libs/imgui/imgui.h"
@@ -12,8 +12,8 @@
 void handleKeyDown( Emulator* pChip8, sf::Event* pEvent );
 void handleKeyUp( Emulator* pChip8, sf::Event* pEvent );
 void redraw( sf::RenderWindow* pWindow);
-void windowCycle( sf::RenderWindow* pWindow, Emulator* pChip8 );
-void debugWindow( sf::RenderWindow* pWindow, Emulator::debugInfo* pDebugInfo, bool* pGameToggled, Emulator* pChip8, sf::Clock* pDeltaClock );
+void windowCycle( sf::RenderWindow* pWindow, Emulator* pChip8, sf::Sound* pBeepNoise );
+void debugWindow( sf::RenderWindow* pWindow, Emulator::debugInfo* pDebugInfo, bool* pGameToggled, Emulator* pChip8, sf::Clock* pDeltaClock, sf::Sound* pBeepNoise );
 
 int const windowHeight = 640;
 int const windowWidth = 320;
@@ -27,6 +27,14 @@ int main( int argc, char* argv[] )
 	sf::RenderWindow window( sf::VideoMode( windowHeight, windowWidth ), "Chip 8 Emulator" );
 	window.setFramerateLimit(60);
 
+	sf::SoundBuffer soundBuffer;
+	sf::Sound beepNoise;
+	if( !soundBuffer.loadFromFile( "./sound/beep-02.wav" ) ) {
+		return -1;
+	}		
+	beepNoise.setBuffer( soundBuffer );
+
+	// If debug enabled, initialize the debug window
 	if( DEBUG ) ImGui::SFML::Init( window );
 
 	/**
@@ -57,11 +65,11 @@ int main( int argc, char* argv[] )
 		}
 
 		if( gameToggled ) 
-			windowCycle( &window, &chip8 );
+			windowCycle( &window, &chip8, &beepNoise );
 		
 		if( DEBUG ) {
 			debugInfo = chip8.getDebugInfo();
-			debugWindow( &window, &debugInfo, &gameToggled, &chip8, &deltaClock );
+			debugWindow( &window, &debugInfo, &gameToggled, &chip8, &deltaClock, &beepNoise );
 		}
 		window.display();
 	}
@@ -69,11 +77,15 @@ int main( int argc, char* argv[] )
 	return 0;
 }
 
-void windowCycle( sf::RenderWindow* pWindow, Emulator* pChip8 ) {
+void windowCycle( sf::RenderWindow* pWindow, Emulator* pChip8, sf::Sound* pBeepNoise ) {
 	pChip8->emulateCycle();
 
 	if( pChip8->canDraw() ) {
 		std::copy( std::begin( pChip8->gfx ), std::end( pChip8->gfx ), std::begin( toDraw ) );
+	}
+	
+	if( pChip8->canBeep() ) {
+		pBeepNoise->play();
 	}
 	
 	redraw( pWindow );
@@ -148,7 +160,7 @@ void redraw( sf::RenderWindow* pWindow )
 	}
 }
 
-void debugWindow( sf::RenderWindow* pWindow, Emulator::debugInfo* pDebugInfo, bool* pGameToggled, Emulator* pChip8, sf::Clock* pDeltaClock )
+void debugWindow( sf::RenderWindow* pWindow, Emulator::debugInfo* pDebugInfo, bool* pGameToggled, Emulator* pChip8, sf::Clock* pDeltaClock, sf::Sound* pBeepNoise )
 {
 	/**
 	 * ImGUI Debug Window Code
@@ -165,7 +177,7 @@ void debugWindow( sf::RenderWindow* pWindow, Emulator::debugInfo* pDebugInfo, bo
 	if( ImGui::Button( "Play/Pause" ) )
 		*pGameToggled = !*pGameToggled;
 	if( ImGui::Button( "Step" ) )
-		windowCycle( pWindow, pChip8 );
+		windowCycle( pWindow, pChip8, pBeepNoise );
 	ImGui::End();
 
 	ImGui::Begin( "Stack" );

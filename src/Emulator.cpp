@@ -104,6 +104,7 @@ void Emulator::emulateCycle()
 	if( sound_timer > 0 ) {
 		if( sound_timer == 1 ) {
 			std::cout << "Beep" << std::endl;
+			beepFlag = true;
 		}
 		sound_timer--;
 	}
@@ -363,6 +364,15 @@ bool Emulator::canDraw()
 {
 	if( drawFlag ) {
 		drawFlag = false;
+		return true;
+	}
+	return false;
+}
+
+bool Emulator::canBeep()
+{
+	if( beepFlag ) {
+		beepFlag = false;
 		return true;
 	}
 	return false;
