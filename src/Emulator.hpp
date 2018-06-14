@@ -25,13 +25,13 @@ class Emulator
 		
 		std::ifstream game;
 
-		void handleOpcode( unsigned short opcode );
+		void handleOpcode();
 		void clearScreen();
-		void storeBCDVX( unsigned short opcode );
-		void storeRegisters( unsigned short b );
-		void loadRegisters( unsigned short b );
+		void storeBCDVX();
+		void storeRegisters( unsigned char b );
+		void loadRegisters( unsigned char b );
 		void debug();
-		void draw( unsigned short opcode );
+		void draw();
 	public:
 		Emulator();
 		void initialize();

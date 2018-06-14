@@ -95,7 +95,7 @@ void Emulator::emulateCycle()
 {
 	// One opcode is stored at pc + pc+1 so combine them by doing:
 	opcode = memory[pc] << 8 | memory[pc + 1];
-	handleOpcode( opcode );
+	handleOpcode();
 
 	if( delay_timer > 0 ) {
 		delay_timer--;
@@ -109,7 +109,7 @@ void Emulator::emulateCycle()
 	}
 }
 
-void Emulator::handleOpcode( unsigned short opcode ) 
+void Emulator::handleOpcode() 
 {
 	// Opcode represented as ABCD
 	unsigned short b = ( opcode & 0x0F00 ) >> 8;
@@ -128,6 +128,7 @@ void Emulator::handleOpcode( unsigned short opcode )
 				case 0x000E: // RET
 					--sp;
 					pc = stack[sp];
+					pc += 2;
 					break;
 			}
 			break;
@@ -136,8 +137,8 @@ void Emulator::handleOpcode( unsigned short opcode )
 			break;
 		case 0x2000: // RET
 			stack[sp] = pc;
-			sp++;
-			pc = bcd;
+			++sp;
+			pc = opcode & 0x0FFF;
 			break;
 		case 0x3000: // SE Vx, byte
 			if( V[b] == cd ) {
@@ -232,7 +233,7 @@ void Emulator::handleOpcode( unsigned short opcode )
 			pc += 2;
 			break;
 		case 0xD000: // DRW Vx, Vy, nibble
-			draw( opcode );
+			draw();
 			pc += 2;
 			break;
 		case 0xE000:
@@ -240,10 +241,12 @@ void Emulator::handleOpcode( unsigned short opcode )
 				case 0x009E: // Ex9E:
 					if( key[V[b]] != 0 )
 						pc += 2;
+					pc += 2;
 					break;
 				case 0x00A1:
 					if( key[V[b]] == 0 )
 						pc += 2;
+					pc += 2;
 					break;
 			}
 			break;
@@ -288,7 +291,7 @@ void Emulator::handleOpcode( unsigned short opcode )
 					pc += 2;
 					break;
 				case 0x0033: // LD B, Vx
-					storeBCDVX( opcode );
+					storeBCDVX();
 					pc += 2;
 					break;
 				case 0x0055: // LD [I], Vx
@@ -313,14 +316,14 @@ void Emulator::clearScreen()
 	}
 }
 
-void Emulator::storeBCDVX( unsigned short opcode )
+void Emulator::storeBCDVX()
 {
 	memory[I] = V[( opcode & 0x0F00 ) >> 8] / 100;
 	memory[I + 1] = ( V[( opcode & 0x0F00 ) >> 8] / 10 ) % 10;
 	memory[I + 2] = ( V[( opcode & 0x0F00 ) >> 8] % 100 ) % 10;
 }
 
-void Emulator::draw( unsigned short opcode )
+void Emulator::draw()
 {
 	unsigned short x = V[( opcode & 0x0F00 ) >> 8];
 	unsigned short y = V[( opcode & 0x00F0 ) >> 4];
@@ -342,14 +345,14 @@ void Emulator::draw( unsigned short opcode )
 	drawFlag = true;
 }
 
-void Emulator::storeRegisters( unsigned short b )
+void Emulator::storeRegisters( unsigned char b )
 {
 	for( int i = 0; i <= b; ++i ) {
 		memory[I + i] = V[i];
 	}
 }
 
-void Emulator::loadRegisters( unsigned short b )
+void Emulator::loadRegisters( unsigned char b )
 {
 	for( int i = 0; i <= b; ++i ) {
 		V[i] = memory[I + i];
